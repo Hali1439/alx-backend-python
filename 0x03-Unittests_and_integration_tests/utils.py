@@ -1,24 +1,17 @@
 #!/usr/bin/env python3
-"""Utilities for working with nested maps."""
+"""Module containing utility functions for working with nested maps and APIs."""
 
-
-from typing import Mapping, Any, Tuple
-
+import requests
+from typing import Mapping, Any, Tuple, Dict
 
 def access_nested_map(nested_map: Mapping, path: Tuple) -> Any:
-    """
-    Access a value in a nested map with a sequence of keys (path).
-
-    Args:
-        nested_map (Mapping): The map to traverse.
-        path (Tuple): A tuple of keys representing the path to the desired value.
-
-    Returns:
-        Any: The value at the end of the path.
-
-    Raises:
-        KeyError: If a key in the path does not exist.
-    """
+    # Traverses the path to access deeply nested values
     for key in path:
         nested_map = nested_map[key]
     return nested_map
+
+def get_json(url: str) -> Dict:
+    # Fetches JSON data from the given URL
+    response = requests.get(url)
+    response.raise_for_status()  # Good practice, ensures failed requests raise an error
+    return response.json()
