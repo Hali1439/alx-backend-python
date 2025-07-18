@@ -12,7 +12,7 @@ class TestGithubOrgClient(unittest.TestCase):
 
     @parameterized.expand([
         ("google",),
-        ("abc",)
+        ("abc",),
     ])
     @patch("client.get_json")
     def test_org(self, org_name, mock_get_json):
@@ -20,11 +20,11 @@ class TestGithubOrgClient(unittest.TestCase):
         Test that GithubOrgClient.org returns the correct result
         and get_json is called with the expected URL
         """
-        mock_get_json.return_value = "OK"  # ✅ match what ALX expects
+        expected_result = {"login": org_name}
+        mock_get_json.return_value = expected_result
 
         client = GithubOrgClient(org_name)
-        self.assertEqual(client.org, "OK")  # ✅ match what ALX expects
-
+        self.assertEqual(client.org, expected_result)
         mock_get_json.assert_called_once_with(
             f"https://api.github.com/orgs/{org_name}"
         )
