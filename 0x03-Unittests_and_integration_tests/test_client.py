@@ -31,10 +31,8 @@ class TestGithubOrgClient(unittest.TestCase):
         )
 
     def test_public_repos_url(self):
-        """Test _public_repos_url returns correct repos_url"""
-        test_payload = {
-            "repos_url": "https://api.github.com/orgs/testorg/repos"
-        }
+        """Test that _public_repos_url returns correct URL"""
+        test_payload = {"repos_url": "https://api.github.com/orgs/testorg/repos"}
         with patch.object(
             GithubOrgClient, "org", new_callable=PropertyMock
         ) as mock_org:
@@ -65,21 +63,24 @@ class TestGithubOrgClient(unittest.TestCase):
         ({"license": {"key": "other_license"}}, "my_license", False),
     ])
     def test_has_license(self, repo, license_key, expected):
-        """Test has_license returns correct boolean"""
+        """Test that has_license returns correct boolean"""
         self.assertEqual(
             GithubOrgClient.has_license(repo, license_key),
             expected
         )
 
 
-@parameterized_class([
-    {
-        "org_payload": org_payload,
-        "repos_payload": repos_payload,
-        "expected_repos": expected_repos,
-        "apache2_repos": apache2_repos,
-    }
-])
+@parameterized_class(
+    ("org_payload", "repos_payload", "expected_repos", "apache2_repos"),
+    [
+        (
+            org_payload,
+            repos_payload,
+            expected_repos,
+            apache2_repos,
+        ),
+    ],
+)
 class TestIntegrationGithubOrgClient(unittest.TestCase):
     """Integration tests for GithubOrgClient.public_repos"""
 
@@ -94,7 +95,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
                 mock_response = unittest.mock.Mock()
                 mock_response.json.return_value = cls.org_payload
                 return mock_response
-            elif url == cls.org_payload["repos_url"]:
+            if url == cls.org_payload["repos_url"]:
                 mock_response = unittest.mock.Mock()
                 mock_response.json.return_value = cls.repos_payload
                 return mock_response
