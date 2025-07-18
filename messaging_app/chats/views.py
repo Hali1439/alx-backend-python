@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from .models import Conversation, Message, User
 from .serializers import ConversationSerializer, MessageSerializer
 from rest_framework.decorators import action
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
 class ConversationViewSet(viewsets.ModelViewSet):
     """
@@ -15,6 +16,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
     """
     queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
+    filter_backends = [DjangoFilterBackend]
 
     def create(self, request, *args, **kwargs):
         """
@@ -37,6 +39,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     """
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
+    filter_backends = [DjangoFilterBackend]
 
     def create(self, request, *args, **kwargs):
         """
