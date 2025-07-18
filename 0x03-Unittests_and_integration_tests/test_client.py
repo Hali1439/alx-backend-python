@@ -31,10 +31,7 @@ class TestGithubOrgClient(unittest.TestCase):
         )
 
     def test_public_repos_url(self):
-        """
-        Test that _public_repos_url returns correct URL
-        from mocked org
-        """
+        """Test that _public_repos_url returns correct URL from mocked org"""
         test_payload = {
             "repos_url": "https://api.github.com/orgs/testorg/repos"
         }
@@ -92,9 +89,7 @@ class TestGithubOrgClient(unittest.TestCase):
     ]
 )
 class TestIntegrationGithubOrgClient(unittest.TestCase):
-    """
-    Integration tests for public_repos with mocked HTTP requests
-    """
+    """Integration tests for public_repos with mocked HTTP requests"""
 
     @classmethod
     def setUpClass(cls):
