@@ -1,32 +1,44 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.conf import settings
 
-# Extended User model if needed
+
 class User(AbstractUser):
-    # Add custom fields here if needed
-    pass
+    """
+    Custom user model extending AbstractUser
+    """
+    user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)
+    first_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+
+    def __str__(self):
+        return self.username
 
 
 class Conversation(models.Model):
     """
-    A conversation that includes multiple users
+    Conversation model to track users in a conversation
     """
-    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="conversations")
+    conversation_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    participants = models.ManyToManyField(User, related_name='conversations')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Conversation {self.id}"
+        return f"Conversation {self.conversation_id}"
 
 
 class Message(models.Model):
     """
-    A message sent from one user in a conversation
+    Message model for messages within a conversation
     """
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="messages_sent")
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="messages")
-    content = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
+    message_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages_sent')
+    message_body = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Message from {self.sender.username} in conversation {self.conversation.id}"
+        return f"Message {self.message_id} by {self.sender.username}"
