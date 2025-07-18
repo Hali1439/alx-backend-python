@@ -69,21 +69,24 @@ class TestGithubOrgClient(unittest.TestCase):
         )
 
 
-@parameterized_class([
-    {
-        "org_payload": org_payload,
-        "repos_payload": repos_payload,
-        "expected_repos": expected_repos,
-        "apache2_repos": apache2_repos,
-    },
-])
+@parameterized_class(
+    ("org_payload", "repos_payload", "expected_repos", "apache2_repos"),
+    [
+        (
+            org_payload,
+            repos_payload,
+            expected_repos,
+            apache2_repos,
+        ),
+    ],
+)
 class TestIntegrationGithubOrgClient(unittest.TestCase):
     """Integration tests for GithubOrgClient.public_repos"""
 
     @classmethod
     def setUpClass(cls):
         """Start patcher for requests.get"""
-        cls.get_patcher = patch("0x03-Unittests_and_integration_tests.client.requests.get")
+        cls.get_patcher = patch("requests.get")
         mock_get = cls.get_patcher.start()
 
         def side_effect(url):
