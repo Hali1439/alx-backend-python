@@ -32,7 +32,8 @@ class TestGithubOrgClient(unittest.TestCase):
 
     def test_public_repos_url(self):
         """
-        Test that _public_repos_url returns correct URL from mocked org
+        Test that _public_repos_url returns correct URL
+        from mocked org
         """
         test_payload = {
             "repos_url": "https://api.github.com/orgs/testorg/repos"
@@ -101,7 +102,6 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         cls.get_patcher = patch("requests.get")
         mock_get = cls.get_patcher.start()
 
-        # Side effect logic
         def side_effect(url):
             if url == "https://api.github.com/orgs/testorg":
                 mock_response = unittest.mock.Mock()
