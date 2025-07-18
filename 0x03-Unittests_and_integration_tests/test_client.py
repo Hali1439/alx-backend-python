@@ -8,7 +8,7 @@ from client import GithubOrgClient
 
 
 class TestGithubOrgClient(unittest.TestCase):
-    """Test case for GithubOrgClient.org"""
+    """Test case for GithubOrgClient.org property"""
 
     @parameterized.expand([
         ("google",),
@@ -16,10 +16,11 @@ class TestGithubOrgClient(unittest.TestCase):
     ])
     @patch("client.get_json")
     def test_org(self, org_name, mock_get_json):
-        """Test that GithubOrgClient.org returns correct value
-        and get_json is called once with expected URL
         """
-        expected_result = {"login": org_name}
+        Test that GithubOrgClient.org returns the correct result
+        and get_json is called exactly once with the right URL.
+        """
+        expected_result = "OK"
         mock_get_json.return_value = expected_result
 
         client = GithubOrgClient(org_name)
@@ -29,3 +30,7 @@ class TestGithubOrgClient(unittest.TestCase):
         mock_get_json.assert_called_once_with(
             f"https://api.github.com/orgs/{org_name}"
         )
+
+
+if __name__ == "__main__":
+    unittest.main()
