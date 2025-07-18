@@ -55,21 +55,3 @@ class TestMemoize(unittest.TestCase):
             self.assertEqual(first, 42)
             self.assertEqual(second, 42)
             mocked.assert_called_once()
-
-
-def run_tests():
-    test_suite = unittest.TestSuite()
-    test_suite.addTest(unittest.makeSuite(TestGetJson))
-    test_suite.addTest(unittest.makeSuite(TestMemoize))
-
-    result = unittest.TestResult()
-    test_suite.run(result)
-
-    if result.wasSuccessful():
-        print("OK")
-    else:
-        print("FAILED (errors={})".format(len(result.errors)))
-
-
-if __name__ == "__main__":
-    run_tests()
