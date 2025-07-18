@@ -89,7 +89,9 @@ class TestGithubOrgClient(unittest.TestCase):
     ]
 )
 class TestIntegrationGithubOrgClient(unittest.TestCase):
-    """Integration tests for public_repos with mocked HTTP requests"""
+    """
+    Integration tests for public_repos with mocked HTTP requests
+    """
 
     @classmethod
     def setUpClass(cls):
