@@ -20,6 +20,7 @@ class TestGithubOrgClient(unittest.TestCase):
         ("google",),
         ("abc",),
     ])
+    
     @patch("client.get_json")
     def test_org(self, org_name, mock_get_json):
         """Test GithubOrgClient.org returns correct value"""
@@ -76,8 +77,9 @@ class TestGithubOrgClient(unittest.TestCase):
         "expected_repos": expected_repos,
         "apache2_repos": apache2_repos,
     }
-], class_name="TestIntegrationGithubOrgClient")
+])
 class TestIntegrationGithubOrgClient(unittest.TestCase):
+
 
     """Integration tests for GithubOrgClient.public_repos"""
 
