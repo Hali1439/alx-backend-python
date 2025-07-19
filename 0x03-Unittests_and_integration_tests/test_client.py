@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unittests for GithubOrgClient methods"""
+"""Unittests and Integration Tests for GithubOrgClient"""
 
 import unittest
 from unittest.mock import patch, PropertyMock
@@ -20,7 +20,6 @@ class TestGithubOrgClient(unittest.TestCase):
         ("google",),
         ("abc",),
     ])
-    
     @patch("client.get_json")
     def test_org(self, org_name, mock_get_json):
         """Test GithubOrgClient.org returns correct value"""
@@ -43,7 +42,7 @@ class TestGithubOrgClient(unittest.TestCase):
 
     @patch("client.get_json")
     def test_public_repos(self, mock_get_json):
-        """Test public_repos returns correct list"""
+        """Test public_repos returns correct list of repo names"""
         mock_get_json.return_value = [
             {"name": "repo1"},
             {"name": "repo2"},
@@ -70,23 +69,19 @@ class TestGithubOrgClient(unittest.TestCase):
         )
 
 
-@parameterized_class([
-    {
-        "org_payload": org_payload,
-        "repos_payload": repos_payload,
-        "expected_repos": expected_repos,
-        "apache2_repos": apache2_repos,
-    }
-])
+@parameterized_class([{
+    "org_payload": org_payload,
+    "repos_payload": repos_payload,
+    "expected_repos": expected_repos,
+    "apache2_repos": apache2_repos,
+}])
 class TestIntegrationGithubOrgClient(unittest.TestCase):
-
-
     """Integration tests for GithubOrgClient.public_repos"""
 
     @classmethod
     def setUpClass(cls):
-        """Start patcher for requests.get"""
-        cls.get_patcher = patch("requests.get")
+        """Start patching requests.get"""
+        cls.get_patcher = patch('requests.get')
         mock_get = cls.get_patcher.start()
 
         def side_effect(url):
