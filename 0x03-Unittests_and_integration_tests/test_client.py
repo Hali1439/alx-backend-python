@@ -53,12 +53,16 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         cls.get_patcher.stop()
 
     def test_public_repos(self):
-        """Test that public_repos returns all repos correctly from fixture"""
+        """
+        Test that public_repos returns all repos correctly from fixture
+        """
         client = GithubOrgClient("testorg")
         self.assertEqual(client.public_repos(), self.expected_repos)
 
     def test_public_repos_with_license(self):
-        """Test that public_repos returns repos filtered by apache-2.0 license"""
+        """
+        Test that public_repos returns repos filtered by apache-2.0 license
+        """
         client = GithubOrgClient("testorg")
         self.assertEqual(
             client.public_repos(license="apache-2.0"),
@@ -84,7 +88,9 @@ class TestGithubOrgClient(unittest.TestCase):
         )
 
     def test_public_repos_url(self):
-        """Test that _public_repos_url retrieves correct URL from payload"""
+        """
+        Test that _public_repos_url retrieves correct URL from payload
+        """
         payload = {"repos_url": "https://api.github.com/orgs/testorg/repos"}
         with patch.object(
             GithubOrgClient, "org", new_callable=PropertyMock
