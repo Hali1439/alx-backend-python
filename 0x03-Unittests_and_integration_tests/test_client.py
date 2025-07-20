@@ -10,7 +10,7 @@ from unittest.mock import patch, PropertyMock
 from parameterized import parameterized, parameterized_class
 from client import GithubOrgClient
 
-# Fixture data directly inlined since import caused ImportError
+# Inlined fixture data
 org_payload = {"login": "testorg", "repos_url": "https://api.github.com/orgs/testorg/repos"}
 repos_payload = [
     {"name": "repo1", "license": {"key": "apache-2.0"}},
@@ -93,6 +93,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         mock_get = cls.get_patcher.start()
 
         def side_effect(url):
+            """Return the appropriate mock response based on the URL"""
             if url == "https://api.github.com/orgs/testorg":
                 mock_response = unittest.mock.Mock()
                 mock_response.json.return_value = cls.org_payload
