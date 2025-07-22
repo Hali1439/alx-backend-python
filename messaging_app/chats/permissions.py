@@ -5,19 +5,30 @@ class IsParticipantOfConversation(BasePermission):
     """
     Custom permission to only allow participants of a conversation
     to access or modify messages in that conversation.
+    
+    Rules:
+    1. Only authenticated users can access the API
+    2. For object-level permissions:
+       - Read access (GET, HEAD, OPTIONS) allowed for participants
+       - Write access (POST, PUT, PATCH, DELETE) allowed for participants
     """
 
     def has_permission(self, request, view):
-        # Allow only authenticated users to access the API at all
+        """
+        Global permission check - allows access only to authenticated users
+        """
         return request.user and request.user.is_authenticated
-
+    
     def has_object_permission(self, request, view, obj):
-        # Read permissions are allowed only to participants of the conversation
-        # Assuming obj is a Message or Conversation instance with participants attribute
-
-        # SAFE_METHODS are GET, HEAD, OPTIONS
+        """
+        Object-level permission check - allows access only to conversation participants
+        """
+        # Check if user is a participant of the conversation
+        is_participant = obj.conversation.participants.filter(id=request.user.id).exists()
+        
+        # For read-only methods, allow if participant
         if request.method in SAFE_METHODS:
-            return request.user in obj.participants.all()
-
-        # For write permissions (POST, PUT, DELETE), also check user is participant
-        return request.user in obj.participants.all()
+            return is_participant
+            
+        # For write methods, also require participant status
+        return is_participant
