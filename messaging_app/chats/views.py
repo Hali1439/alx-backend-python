@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+from rest_framework.exceptions import PermissionDenied
 
 from .models import Conversation, Message, User
 from .serializers import ConversationSerializer, MessageSerializer
@@ -18,7 +19,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields = ['created_at']
     ordering = ['-created_at']
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
 
     def get_queryset(self):
         """
@@ -64,7 +65,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, IsParticipantOfConversation]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['conversation']
+    filterset_fields = ['conversation_id']  # Added conversation_id filter
     ordering_fields = ['timestamp']
     ordering = ['-timestamp']
 
@@ -72,19 +73,35 @@ class MessageViewSet(viewsets.ModelViewSet):
         """
         Only return messages from conversations the user is a participant of
         """
-        return Message.objects.filter(
+        queryset = Message.objects.filter(
             conversation__participants=self.request.user
         ).select_related('sender', 'conversation')
+        
+        # Filter by conversation_id if provided in query params
+        conversation_id = self.request.query_params.get('conversation_id')
+        if conversation_id:
+            queryset = queryset.filter(conversation_id=conversation_id)
+            
+        return queryset
 
     def perform_create(self, serializer):
         """
         Automatically set the sender to the current user
         and verify conversation participation
         """
-        conversation = serializer.validated_data['conversation']
+        conversation_id = serializer.validated_data.get('conversation_id')
+        if not conversation_id:
+            raise serializers.ValidationError({"conversation_id": "This field is required"})
+            
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+        except Conversation.DoesNotExist:
+            raise PermissionDenied("Conversation does not exist")
+
         if not conversation.participants.filter(id=self.request.user.id).exists():
             raise PermissionDenied("You are not a participant of this conversation")
-        serializer.save(sender=self.request.user)
+            
+        serializer.save(sender=self.request.user, conversation=conversation)
 
     def create(self, request, *args, **kwargs):
         """
@@ -101,8 +118,9 @@ class MessageViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
                 headers=headers
             )
-        except PermissionDenied as e:
+        except (PermissionDenied, serializers.ValidationError) as e:
             return Response(
                 {"error": str(e)},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN if isinstance(e, PermissionDenied) 
+                else status.HTTP_400_BAD_REQUEST
             )
