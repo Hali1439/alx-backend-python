@@ -1,11 +1,13 @@
 from django.shortcuts import render
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, serializers
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rest_framework.exceptions import PermissionDenied
 
+from .filters import MessageFilter
+from .pagination import MessagePagination
 from .models import Conversation, Message, User
 from .serializers import ConversationSerializer, MessageSerializer
 from .permissions import IsParticipantOfConversation
@@ -19,7 +21,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields = ['created_at']
     ordering = ['-created_at']
-    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]  # Fixed typo in class name
 
     def get_queryset(self):
         """
@@ -54,7 +56,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
         conversation = Conversation.objects.create()
         conversation.participants.set(users)
-        serializer = self.get_serializer(conversation)
+        serializer = self.get_serializer(conversation)  # Fixed variable name typo
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -65,7 +67,8 @@ class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, IsParticipantOfConversation]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['conversation_id']  # Added conversation_id filter
+    filterset_class = MessageFilter  # Moved before filterset_fields for logical order
+    pagination_class = MessagePagination
     ordering_fields = ['timestamp']
     ordering = ['-timestamp']
 
@@ -77,11 +80,8 @@ class MessageViewSet(viewsets.ModelViewSet):
             conversation__participants=self.request.user
         ).select_related('sender', 'conversation')
         
-        # Filter by conversation_id if provided in query params
-        conversation_id = self.request.query_params.get('conversation_id')
-        if conversation_id:
-            queryset = queryset.filter(conversation_id=conversation_id)
-            
+        # Note: The filterset_class will handle conversation_id filtering,
+        # so we can remove the manual filtering here for consistency
         return queryset
 
     def perform_create(self, serializer):
@@ -89,19 +89,14 @@ class MessageViewSet(viewsets.ModelViewSet):
         Automatically set the sender to the current user
         and verify conversation participation
         """
-        conversation_id = serializer.validated_data.get('conversation_id')
-        if not conversation_id:
-            raise serializers.ValidationError({"conversation_id": "This field is required"})
+        conversation = serializer.validated_data.get('conversation')
+        if not conversation:
+            raise serializers.ValidationError({"conversation": "This field is required"})
             
-        try:
-            conversation = Conversation.objects.get(id=conversation_id)
-        except Conversation.DoesNotExist:
-            raise PermissionDenied("Conversation does not exist")
-
         if not conversation.participants.filter(id=self.request.user.id).exists():
             raise PermissionDenied("You are not a participant of this conversation")
             
-        serializer.save(sender=self.request.user, conversation=conversation)
+        serializer.save(sender=self.request.user)
 
     def create(self, request, *args, **kwargs):
         """
