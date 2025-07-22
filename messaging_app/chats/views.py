@@ -1,22 +1,29 @@
 from django.shortcuts import render
 
-# Create your views here.
-
-from rest_framework import viewsets, status
+from rest_framework import status
 from rest_framework.response import Response
-from .models import Conversation, Message, User
-from .serializers import ConversationSerializer, MessageSerializer
-from rest_framework.decorators import action
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 
-class ConversationViewSet(viewsets.ModelViewSet):
+from .models import Conversation, Message, User
+from .serializers import ConversationSerializer, MessageSerializer
+
+
+class ConversationViewSet(ModelViewSet):
     """
     ViewSet for listing and creating conversations
     """
-    queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
     filter_backends = [DjangoFilterBackend]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Limit conversations to those where the requesting user is a participant
+        """
+        return Conversation.objects.filter(participants=self.request.user)
 
     def create(self, request, *args, **kwargs):
         """
@@ -27,19 +34,28 @@ class ConversationViewSet(viewsets.ModelViewSet):
             return Response({"error": "Participants required"}, status=status.HTTP_400_BAD_REQUEST)
 
         conversation = Conversation.objects.create()
-        users = User.objects.filter(user_id__in=participant_ids)
+        users = User.objects.filter(user_id__in=participant_ids)  # Assuming custom user_id field
         conversation.participants.set(users)
+        conversation.participants.add(request.user)  # Optionally ensure the creator is included
         serializer = self.get_serializer(conversation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-class MessageViewSet(viewsets.ModelViewSet):
+class MessageViewSet(ModelViewSet):
     """
-    ViewSet for listing and sending messages
+    ViewSet for listing, creating, and managing messages
     """
-    queryset = Message.objects.all()
     serializer_class = MessageSerializer
-    filter_backends = [DjangoFilterBackend]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    ordering_fields = ['timestamp']
+    ordering = ['-timestamp']
+
+    def get_queryset(self):
+        """
+        Only return messages from conversations the user is a participant of
+        """
+        return Message.objects.filter(conversation__participants=self.request.user)
 
     def create(self, request, *args, **kwargs):
         """
@@ -57,9 +73,15 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         try:
             conversation = Conversation.objects.get(conversation_id=conversation_id)
-            sender = User.objects.get(user_id=sender_id)
+            sender = User.objects.get(user_id=sender_id)  # Assuming custom user_id field
         except (Conversation.DoesNotExist, User.DoesNotExist):
             return Response({"error": "Invalid conversation or sender ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.user != sender:
+            return Response({"error": "Authenticated user must be the sender"}, status=status.HTTP_403_FORBIDDEN)
+
+        if request.user not in conversation.participants.all():
+            return Response({"error": "You are not a participant of this conversation"}, status=status.HTTP_403_FORBIDDEN)
 
         message = Message.objects.create(
             conversation=conversation,
@@ -68,4 +90,3 @@ class MessageViewSet(viewsets.ModelViewSet):
         )
         serializer = self.get_serializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
