@@ -1,5 +1,5 @@
 import logging
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from datetime import datetime, time  # Added time import here
 
 class RequestLoggingMiddleware:
