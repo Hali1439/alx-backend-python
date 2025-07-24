@@ -89,7 +89,7 @@ class OffensiveLanguageMiddleware:
         xff = request.META.get('HTTP_X_FORWARDED_FOR')
         return xff.split(',')[0] if xff else request.META.get('REMOTE_ADDR')
 
-class RolePermissionMiddleware:
+class RolepermissionMiddleware:
     """Middleware to enforce role-based permissions"""
     def __init__(self, get_response):
         self.get_response = get_response
