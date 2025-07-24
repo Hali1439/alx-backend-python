@@ -54,7 +54,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'chats.middleware.RequestLoggingMiddleware',  # 
+    'chats.middleware.RequestLoggingMiddleware', 
+    'chats.middleware.RestrictAccessByTimeMiddleware', 
 ]
 
 ROOT_URLCONF = 'messaging_app.urls'
@@ -153,3 +154,14 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+RESTRICTED_HOURS = {
+    'start': time(21, 0),  # 9 PM
+    'end': time(6, 0)      # 6 AM
+}
+
+RESTRICTED_PATHS = [
+    '/chat/',
+    '/messages/',
+    '/api/chat/'
+]
