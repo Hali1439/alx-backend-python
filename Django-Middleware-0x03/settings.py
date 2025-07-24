@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+from datetime import time
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -55,7 +56,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'chats.middleware.RequestLoggingMiddleware', 
-    'chats.middleware.RestrictAccessByTimeMiddleware', 
+    'chats.middleware.RestrictAccessByTimeMiddleware',
+    'chats.middleware.OffensiveLanguageMiddleware', 
 ]
 
 ROOT_URLCONF = 'messaging_app.urls'
@@ -155,13 +157,20 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-RESTRICTED_HOURS = {
-    'start': time(21, 0),  # 9 PM
-    'end': time(6, 0)      # 6 AM
-}
+# Time restriction settings
+RESTRICTED_START = time(21, 0)  # 9 PM
+RESTRICTED_END = time(6, 0)     # 6 AM
+RESTRICTED_PATHS = ['/chat/', '/messages/', '/api/chat/']
 
-RESTRICTED_PATHS = [
-    '/chat/',
-    '/messages/',
-    '/api/chat/'
-]
+# Rate limiting settings
+RATE_LIMIT = 5  # 5 messages
+TIME_WINDOW = 60  # 60 seconds (1 minute)
+MESSAGE_PATHS = ['/api/messages/', '/chat/send/']
+
+# Cache configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'rate-limit-cache',
+    }
+}
