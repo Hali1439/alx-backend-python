@@ -1,16 +1,17 @@
 import logging
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import JsonResponse
 from django.core.cache import cache
-from datetime import datetime, time, timedelta
+from datetime import datetime, time
 from django.conf import settings
 
 class RequestLoggingMiddleware:
+    """Middleware to log all incoming requests"""
     def __init__(self, get_response):
         self.get_response = get_response
         self.logger = self._configure_logger()
 
     def _configure_logger(self):
-        """Helper method to configure the logger"""
+        """Configure request logging settings"""
         logger = logging.getLogger('request_logger')
         logger.setLevel(logging.INFO)
         
@@ -25,143 +26,102 @@ class RequestLoggingMiddleware:
         user = request.user.username if request.user.is_authenticated else 'Anonymous'
         log_message = f"{datetime.now()} - User: {user} - Path: {request.path} - Method: {request.method}"
         self.logger.info(log_message)
-        
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
 
 class RestrictAccessByTimeMiddleware:
+    """Middleware to restrict chat access during certain hours"""
     def __init__(self, get_response):
         self.get_response = get_response
-        # Get configuration from settings or use defaults
         self.restricted_start = getattr(settings, 'RESTRICTED_START', time(21, 0))  # 9 PM default
         self.restricted_end = getattr(settings, 'RESTRICTED_END', time(6, 0))       # 6 AM default
         self.restricted_paths = getattr(settings, 'RESTRICTED_PATHS', ['/chat/', '/messages/', '/api/chat/'])
 
     def __call__(self, request):
         current_time = datetime.now().time()
+        is_restricted = ((current_time >= self.restricted_start) or 
+                        (current_time <= self.restricted_end))
         
-        is_restricted = (
-            (current_time >= self.restricted_start) or
-            (current_time <= self.restricted_end)
-        )
-        
-        is_chat_url = any(
-            request.path.startswith(path)
-            for path in self.restricted_paths
-        )
-        
-        if is_restricted and is_chat_url and not (hasattr(request.user, 'is_staff') and request.user.is_staff):
+        if (is_restricted and 
+            any(request.path.startswith(p) for p in self.restricted_paths) and 
+            not getattr(request.user, 'is_staff', False)):
             return JsonResponse(
                 {
-                    "error": "Chat access is restricted between 9 PM and 6 AM. "
-                            "Please try again during allowed hours.",
+                    "error": "Chat access is restricted between 9 PM and 6 AM",
                     "status": 403
                 },
                 status=403
             )
-        
         return self.get_response(request)
 
 class OffensiveLanguageMiddleware:
+    """Middleware to rate limit message sending"""
     def __init__(self, get_response):
         self.get_response = get_response
-        self.logger = logging.getLogger('offensive_language')
-        # Get configuration from settings or use defaults
-        self.RATE_LIMIT = getattr(settings, 'RATE_LIMIT', 5)  # 5 messages default
-        self.TIME_WINDOW = getattr(settings, 'TIME_WINDOW', 60)  # 60 seconds default
-        self.MESSAGE_PATHS = getattr(settings, 'MESSAGE_PATHS', ['/api/messages/', '/chat/send/'])
+        self.logger = logging.getLogger('rate_limit')
+        self.limit = getattr(settings, 'RATE_LIMIT', 5)  # 5 messages default
+        self.window = getattr(settings, 'TIME_WINDOW', 60)  # 60 seconds default
+        self.protected_paths = getattr(settings, 'MESSAGE_PATHS', ['/api/messages/', '/chat/send/'])
 
     def __call__(self, request):
-        # Only process POST requests to message endpoints
-        if request.method == 'POST' and any(
-            request.path.startswith(path) for path in self.MESSAGE_PATHS
-        ):
-            ip_address = self._get_client_ip(request)
-            cache_key = f"rate_limit_{ip_address}"
-
-            # Get current count or initialize
-            request_count = cache.get(cache_key, 0)
+        if (request.method == 'POST' and 
+            any(request.path.startswith(p) for p in self.protected_paths)):
             
-            if request_count >= self.RATE_LIMIT:
-                self.logger.warning(
-                    f"Rate limit exceeded for IP: {ip_address} - "
-                    f"{request_count} requests in last {self.TIME_WINDOW} seconds"
-                )
+            ip = self._get_client_ip(request)
+            cache_key = f"rl_{ip}"
+            count = cache.get(cache_key, 0)
+            
+            if count >= self.limit:
+                self.logger.warning(f"Rate limit exceeded for {ip}")
                 return JsonResponse(
                     {
-                        "error": "Rate limit exceeded. "
-                                "Please wait before sending more messages.",
+                        "error": "Too many messages. Please wait.",
                         "status": 429
                     },
                     status=429
                 )
-
-            # Increment count and set/update cache
-            cache.set(
-                key=cache_key,
-                value=request_count + 1,
-                timeout=self.TIME_WINDOW
-            )
-
+            
+            cache.set(cache_key, count + 1, self.window)
+        
         return self.get_response(request)
 
     def _get_client_ip(self, request):
-        """Extract client IP address from request"""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        return x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
-    
+        """Extract client IP from request"""
+        xff = request.META.get('HTTP_X_FORWARDED_FOR')
+        return xff.split(',')[0] if xff else request.META.get('REMOTE_ADDR')
+
 class RolePermissionMiddleware:
+    """Middleware to enforce role-based permissions"""
     def __init__(self, get_response):
         self.get_response = get_response
-        # Get configuration from settings or use defaults
-        self.admin_paths = getattr(settings, 'ADMIN_ONLY_PATHS', [
-            '/admin/',
-            '/api/admin/',
-            '/chat/delete/'
+        self.admin_paths = getattr(settings, 'ADMIN_PATHS', [
+            '/admin/', '/api/admin/', '/chat/delete/'
         ])
         self.moderator_paths = getattr(settings, 'MODERATOR_PATHS', [
-            '/api/moderate/',
-            '/chat/edit/'
+            '/api/moderate/', '/chat/edit/'
         ])
 
     def __call__(self, request):
-        # Check if path requires special permissions
-        path_requires_admin = any(
-            request.path.startswith(path) for path in self.admin_paths
-        )
-        path_requires_moderator = any(
-            request.path.startswith(path) for path in self.moderator_paths
-        )
+        needs_admin = any(request.path.startswith(p) for p in self.admin_paths)
+        needs_mod = any(request.path.startswith(p) for p in self.moderator_paths)
 
-        if path_requires_admin or path_requires_moderator:
-            # Check if user is authenticated
+        if needs_admin or needs_mod:
             if not request.user.is_authenticated:
                 return JsonResponse(
-                    {
-                        "error": "Authentication required",
-                        "status": 401
-                    },
+                    {"error": "Login required", "status": 401},
                     status=401
                 )
             
-            # Check admin permission
-            if path_requires_admin and not (hasattr(request.user, 'is_admin') or not request.user.is_admin):
+            if needs_admin and not getattr(request.user, 'is_admin', False):
                 return JsonResponse(
-                    {
-                        "error": "Admin privileges required",
-                        "status": 403
-                    },
+                    {"error": "Admin access required", "status": 403},
                     status=403
                 )
             
-            # Check moderator permission
-            if path_requires_moderator and not (hasattr(request.user, 'is_moderator') or not request.user.is_moderator):
+            if needs_mod and not getattr(request.user, 'is_moderator', False):
                 return JsonResponse(
-                    {
-                        "error": "Moderator privileges required",
-                        "status": 403
-                    },
+                    {"error": "Moderator access required", "status": 403},
                     status=403
                 )
-
+        
         return self.get_response(request)
+    
