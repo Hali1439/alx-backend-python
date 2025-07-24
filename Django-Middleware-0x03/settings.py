@@ -58,6 +58,7 @@ MIDDLEWARE = [
     'chats.middleware.RequestLoggingMiddleware', 
     'chats.middleware.RestrictAccessByTimeMiddleware',
     'chats.middleware.OffensiveLanguageMiddleware', 
+    'chats.middleware.RolePermissionMiddleware',
 ]
 
 ROOT_URLCONF = 'messaging_app.urls'
@@ -174,3 +175,15 @@ CACHES = {
         'LOCATION': 'rate-limit-cache',
     }
 }
+# Role-based access control paths
+ADMIN_ONLY_PATHS = [
+    '/admin/',
+    '/api/admin/',
+    '/chat/delete/'
+]
+
+MODERATOR_PATHS = [
+    '/api/moderate/',
+    '/chat/edit/'
+]
+

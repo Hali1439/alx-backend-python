@@ -109,3 +109,59 @@ class OffensiveLanguageMiddleware:
         """Extract client IP address from request"""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         return x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
+    
+class RolePermissionMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # Get configuration from settings or use defaults
+        self.admin_paths = getattr(settings, 'ADMIN_ONLY_PATHS', [
+            '/admin/',
+            '/api/admin/',
+            '/chat/delete/'
+        ])
+        self.moderator_paths = getattr(settings, 'MODERATOR_PATHS', [
+            '/api/moderate/',
+            '/chat/edit/'
+        ])
+
+    def __call__(self, request):
+        # Check if path requires special permissions
+        path_requires_admin = any(
+            request.path.startswith(path) for path in self.admin_paths
+        )
+        path_requires_moderator = any(
+            request.path.startswith(path) for path in self.moderator_paths
+        )
+
+        if path_requires_admin or path_requires_moderator:
+            # Check if user is authenticated
+            if not request.user.is_authenticated:
+                return JsonResponse(
+                    {
+                        "error": "Authentication required",
+                        "status": 401
+                    },
+                    status=401
+                )
+            
+            # Check admin permission
+            if path_requires_admin and not (hasattr(request.user, 'is_admin') or not request.user.is_admin):
+                return JsonResponse(
+                    {
+                        "error": "Admin privileges required",
+                        "status": 403
+                    },
+                    status=403
+                )
+            
+            # Check moderator permission
+            if path_requires_moderator and not (hasattr(request.user, 'is_moderator') or not request.user.is_moderator):
+                return JsonResponse(
+                    {
+                        "error": "Moderator privileges required",
+                        "status": 403
+                    },
+                    status=403
+                )
+
+        return self.get_response(request)
