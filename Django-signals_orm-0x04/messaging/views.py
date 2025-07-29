@@ -7,8 +7,7 @@ from django.views import View
 from django.utils.decorators import method_decorator
 from .models import Message, Notification
 
-User = get_user_model()
-
+@cache_page(60)
 @login_required
 def unread_messages(request):
     """
@@ -48,6 +47,7 @@ def delete_user(request):
     return redirect('home')
 
 @method_decorator(login_required, name='dispatch')
+@method_decorator(cache_page(60), name='dispatch')
 class MessageThreadView(View):
     """
     Class-based view for displaying message threads
