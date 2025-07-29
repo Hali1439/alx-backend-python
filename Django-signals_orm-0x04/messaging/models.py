@@ -53,9 +53,22 @@ class MessageHistory(models.Model):
         on_delete=models.SET_NULL
     )
 
+class Notification(models.Model):
+    user = models.ForeignKey(
+        User,
+        related_name='notifications',
+        on_delete=models.CASCADE
+    )
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE
+    )
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
     class Meta:
-        verbose_name_plural = "Message Histories"
-        ordering = ['-edited_at']
+        verbose_name_plural = "Notifications"
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"History for message {self.message.id}"
