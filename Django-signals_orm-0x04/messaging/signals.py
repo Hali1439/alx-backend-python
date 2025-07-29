@@ -18,7 +18,7 @@ def create_message_notification(sender, instance, created, **kwargs):
         )
 
 @receiver(pre_save, sender=Message)
-def track_message_edits(sender, instance, **kwargs):
+def log_message_edit(sender, instance, **kwargs):
     """
     Tracks message edits by saving previous content to MessageHistory
     Marks message as edited when content changes
@@ -26,12 +26,17 @@ def track_message_edits(sender, instance, **kwargs):
     if instance.pk:  # Only for existing messages
         try:
             original = Message.objects.get(pk=instance.pk)
-            if original.content != instance.content:
+            if original.content != instance.content:  # Content changed
                 MessageHistory.objects.create(
                     message=instance,
-                    content=original.content
+                    content=original.content,
+                    edited_by=original.edited_by if original.edited else original.sender
                 )
                 instance.edited = True
+                instance.edited_at = timezone.now()
+                # Set edited_by to current user if available
+                if hasattr(instance, '_current_user'):
+                    instance.edited_by = instance._current_user
         except Message.DoesNotExist:
             pass
 
