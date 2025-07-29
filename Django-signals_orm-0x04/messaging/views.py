@@ -13,9 +13,12 @@ User = get_user_model()
 def unread_messages(request):
     """
     View to display all unread messages for the current user
-    Uses the custom unread manager with optimized queries
+    with direct query optimization in the view
     """
-    unread_messages = Message.unread.for_user(request.user)
+    # Using the manager and adding additional optimization in the view
+    unread_messages = Message.unread.unread_for_user(request.user).only(
+        'id', 'content', 'timestamp', 'sender__username'
+    )
     
     return render(request, 'messaging/unread_messages.html', {
         'unread_messages': unread_messages
