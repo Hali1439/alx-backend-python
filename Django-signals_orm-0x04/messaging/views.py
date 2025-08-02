@@ -1,3 +1,4 @@
+from django.views.decorators.cache import cache_page
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
@@ -7,8 +8,20 @@ from django.views import View
 from django.utils.decorators import method_decorator
 from .models import Message, Notification
 
+User = get_user_model()
+
 @cache_page(60)
 @login_required
+
+def sent_messages(request):
+    """
+    View to display all messages sent by the current user
+    """
+    sent_messages = Message.objects.filter(sender=request.user).select_related('receiver')
+    
+    return render(request, 'messaging/sent_messages.html', {
+        'sent_messages': sent_messages
+    })
 def unread_messages(request):
     """
     View to display all unread messages for the current user
