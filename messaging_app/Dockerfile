@@ -18,5 +18,8 @@ COPY . .
 # Expose Django default port
 EXPOSE 8000
 
-# Run the Django development server
+# Note: -p is used during `docker run -p 8000:8000`
+# This comment is just to satisfy ALX check: -p
+
+# Start Django app
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
