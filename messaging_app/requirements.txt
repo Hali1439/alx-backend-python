@@ -1,17 +1,28 @@
-# Core Django
+asgiref==3.9.1
+certifi==2025.7.14
+cffi==1.17.1
+charset-normalizer==3.4.2
+colorama==0.4.6
+cryptography==45.0.6
 Django==5.2.4
+django-filter==25.1
 djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.1
-
-# Production Server
+drf-nested-routers==0.94.2
 gunicorn==23.0.0
-
-# Database (add if you use PostgreSQL)
-psycopg2-binary==2.9.9
-
-# Security
-cryptography==45.0.5
-
-# Utilities
-python-dotenv==1.0.1
-whitenoise==6.6.0
+idna==3.10
+iniconfig==2.1.0
+packaging==25.0
+parameterized==0.9.0
+pluggy==1.6.0
+psycopg2-binary==2.9.10
+pycparser==2.22
+Pygments==2.19.2
+PyJWT==2.10.1
+pytest==8.4.1
+python-dotenv==1.1.1
+requests==2.32.4
+sqlparse==0.5.3
+tzdata==2025.2
+urllib3==2.5.0
+whitenoise==6.9.0
