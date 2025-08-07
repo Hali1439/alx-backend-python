@@ -57,8 +57,7 @@ MANIFEST
 # Docker
 *.pid
 *.seed
-Dockerfile
-docker-compose.yml
+# Docker-related files
 
 # IDEs
 .idea/
