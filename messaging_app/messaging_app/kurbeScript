@@ -1,29 +1,14 @@
-cript - Starts a local Kubernetes cluster and verifies it
+#!/bin/bash
+# kurbeScript - Starts a local Kubernetes cluster and verifies it
 
 # Exit immediately if any command fails
 set -e
 
-echo "Ì∫Ä Starting Kubernetes setup..."
+# Start Minikube
+minikube start
 
-# Step 1: Check if minikube is installed
-if ! command -v minikube &> /dev/null
-then
-    echo "‚ùå Minikube is not installed. Please install it first."
-        echo "Visit: https://minikube.sigs.k8s.io/docs/start/"
-	    exit 1
-	    fi
+# Show cluster info
+kubectl cluster-info
 
-	    # Step 2: Start Minikube cluster (if not already running)
-	    echo "‚úÖ Starting Minikube..."
-	    minikube start
-
-	    # Step 3: Verify the cluster is running
-	    echo "Ì¥ç Checking Kubernetes cluster info..."
-	    kubectl cluster-info
-
-	    # Step 4: Retrieve available pods in all namespaces
-	    echo "Ì≥ã Listing all pods..."
-	    kubectl get pods --all-namespaces
-
-	    echo "Ìæâ Kubernetes setup complete!"
-	    
+# List all pods in all namespaces
+kubectl get pods --all-namespaces
