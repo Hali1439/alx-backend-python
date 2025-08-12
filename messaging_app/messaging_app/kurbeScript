@@ -26,4 +26,4 @@ then
 	    kubectl get pods --all-namespaces
 
 	    echo "í¾‰ Kubernetes setup complete!"
-
+	    
