@@ -78,3 +78,6 @@ secrets.json
 *.crt
 *.key
 *.envrc
+
+messaging_app/messaging_app/minikube-linux-amd64
+messaging_app/minikube-linux-amd64
