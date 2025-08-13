@@ -18,3 +18,7 @@ curl http://<ingress-name>.<namespace>.svc.cluster.local/<path>
 
 # 7. openening command
 minikube dashboard
+
+# (Optional) Enable ingress addon in minikube
+minikube addons enable ingress
+ 
