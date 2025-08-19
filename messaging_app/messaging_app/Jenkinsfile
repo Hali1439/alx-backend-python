@@ -2,19 +2,21 @@ pipeline {
     agent any
 
     tools {
-        python 'Python3'  // Make sure Python3 is configured in Jenkins Global Tools
+        python 'Python3'  // Make sure you configured this under Global Tool Configuration
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/<your-username>/alx-backend-python.git'
+                git branch: 'main',
+                    url: 'https://github.com/<your-username>/alx-backend-python.git',
+                    credentialsId: 'github-credentials'   // <-- Add your Jenkins GitHub credentialsId here
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh 'pip install -r messaging_app/requirements.txt'
+                sh 'pip3 install -r messaging_app/requirements.txt'
             }
         }
 
